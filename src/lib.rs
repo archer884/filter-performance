@@ -46,7 +46,7 @@ pub fn filter_comments_copy_within(text: &mut String) {
     text.truncate(out);
 }
 
-pub fn filter_comments_custom_copy_wihin(text: String) -> String {
+pub fn filter_comments_custom_copy_within(text: String) -> String {
     use std::io::{Cursor, Seek, SeekFrom, Write};
     use std::{mem, ptr};
 

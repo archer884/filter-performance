@@ -22,7 +22,7 @@ fn benchmark(c: &mut Criterion) {
     group.bench_function("custom copy within", |b| {
         b.iter(|| {
             let text = black_box(TEXT.to_string());
-            black_box(filter_measurements::filter_comments_custom_copy_wihin(text));
+            black_box(filter_measurements::filter_comments_custom_copy_within(text));
         })
     });
 }
