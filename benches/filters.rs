@@ -22,8 +22,30 @@ fn benchmark(c: &mut Criterion) {
     group.bench_function("custom copy within", |b| {
         b.iter(|| {
             let text = black_box(TEXT.to_string());
-            black_box(filter_measurements::filter_comments_custom_copy_within(text));
+            black_box(filter_measurements::filter_comments_custom_copy_within(
+                text,
+            ));
         })
+    });
+
+    group.bench_function("regex replace", |b| {
+        let pattern = filter_measurements::build_pattern();
+        b.iter(|| {
+            black_box(filter_measurements::filter_comments_regex(
+                &pattern,
+                black_box(TEXT),
+            ));
+        });
+    });
+
+    group.bench_function("regex copy within", |b| {
+        let pattern = filter_measurements::build_pattern();
+        b.iter(|| {
+            let mut text = black_box(TEXT.to_string());
+            black_box(filter_measurements::filter_comments_regex_copy_within(
+                &pattern, &mut text,
+            ));
+        });
     });
 }
 

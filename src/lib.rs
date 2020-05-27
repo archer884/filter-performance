@@ -1,3 +1,6 @@
+use regex::Regex;
+use std::borrow::Cow;
+
 pub fn filter_comments(text: &str) -> String {
     let mut text = text;
     let mut state = false;
@@ -20,6 +23,45 @@ pub fn filter_comments(text: &str) -> String {
     }
 
     result
+}
+
+pub fn build_pattern() -> Regex {
+    Regex::new(r#"(?s)<!--.*?-->"#).unwrap()
+}
+
+pub fn filter_comments_regex<'a>(pattern: &Regex, text: &'a str) -> Cow<'a, str> {
+    pattern.replace_all(text, "")
+}
+
+pub fn filter_comments_regex_copy_within(pattern: &Regex, text: &mut String) {
+    // In theory, we need to NOT have a reference to the string hanging round, because we are
+    // about to destroy it...
+    let locations: Vec<_> = pattern
+        .find_iter(text)
+        .map(|x| (x.start(), x.end()))
+        .collect();
+
+    let mut idx = 0;
+    let mut out = 0;
+
+    for (start, end) in locations {
+        unsafe {
+            if idx != 0 {
+                text.as_bytes_mut().copy_within(idx..start, out);
+            }
+            out += start - idx;
+            idx += end - idx;
+        }
+    }
+
+    // We're out of comments, so just grab whatever is left. Potentially a noop, but
+    // hopefully the implementation of copy_within knows that.
+    unsafe {
+        text.as_bytes_mut().copy_within(idx.., out);
+        out += text.len() - idx;
+    }
+
+    text.truncate(out);
 }
 
 pub fn filter_comments_copy_within(text: &mut String) {
@@ -99,4 +141,17 @@ pub fn filter_comments_custom_copy_within(text: String) -> String {
     let mut buffer = edit.into_inner();
     buffer.truncate(overall_length);
     return unsafe { String::from_utf8_unchecked(buffer) };
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn filter_comments_regex_copy_within() {
+        let mut actual = String::from("Hello! <!-- World. --> How <!-- tall --> are you?");
+        let expected = "Hello!  How  are you?";
+
+        super::filter_comments_regex_copy_within(&super::build_pattern(), &mut actual);
+
+        assert_eq!(actual, expected, "{}", actual);
+    }
 }
